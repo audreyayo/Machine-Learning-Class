@@ -78,7 +78,7 @@ plt.show()
 k_range=range(1,26)
 scores=[]
 for k in k_range:
-    knn = KNeighborsClassifier(n_neighbors=5, p=2, metric='minkowski')
+    knn = KNeighborsClassifier(n_neighbors=k, p=2, metric='minkowski')
     knn.fit(X_train_std, y_train)
     #print('Test accuracy:',knn.score(X_test_std,y_test))
     plot_decision_regions(X_combined_std, y_combined, classifier=knn, test_idx=range(105, 150))
@@ -94,4 +94,7 @@ print(scores)
 plt.plot(k_range,scores)
 plt.xlabel('Value of K for KNN')
 plt.ylabel('Testing Accuracy')
-    
+
+print("My name is {Audrey Ayo}")
+print("My NetID is: {ayo2}")
+print("I hereby certify that I have read the University policy on Academic Integrity and that I am not in violation.")
