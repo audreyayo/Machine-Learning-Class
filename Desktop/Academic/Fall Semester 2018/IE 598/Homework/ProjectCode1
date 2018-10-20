@@ -1,1 +1,106 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import RANSACRegressor
+from sklearn.model_selection import train_test_split
+import scipy as sp
+from sklearn.metrics import r2_score
+from sklearn.metrics import mean_squared_error
+from sklearn.linear_model import Lasso
+from sklearn.linear_model import Ridge
+from sklearn.linear_model import ElasticNet
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.preprocessing import LabelEncoder
+from pandas import DataFrame
+import matplotlib.pyplot as plot
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+from sklearn.neighbors import KNeighborsClassifier
 
+df_CreditScores = pd.read_csv("/Users/rishabhgooner/Downloads/MLF_GP1_CreditScore.csv")
+
+# Print the number of NaNs
+print(df_CreditScores.isnull().sum())
+
+# Print shape of original DataFrame
+print("Shape of Original DataFrame: {}".format(df_CreditScores.shape))
+
+# Drop missing values and print shape of new DataFrame
+df_CreditScores = df_CreditScores.dropna()
+
+# Print shape of new DataFrame
+print("Shape of DataFrame After Dropping All Rows with Missing Values: {}".format(df_CreditScores.shape))
+
+X, y = df_CreditScores.iloc[0:1699,0:25], df_CreditScores.InvGrd
+
+print(X.shape, y.shape)
+
+# data frame summary
+summary = X.describe()
+print(summary)
+
+# Exploratory Data Analysis
+
+df_CreditScores.columns = ['Sales/Revenues','Gross Margin', 'EBITDA','EBITDA Margin',
+                           'Net Income Before Extras','Total Debt', 'Net Debt','LT Debt',
+                           'ST Debt','Cash','Free Cash Flow','Total Debit/EBITDA','Net Debt/EBITDA','Total MV',
+                           'Total Debt/MV','Net Debt/MV','CFO/Debt','CFO',
+                           'Interest Coverage','Total Liquidity','Current Liquidity',
+                           'Current Liabilities','EPS Before Extras','PE','ROA','ROE','InvGrd','Rating']
+
+df_CreditScores.head()
+
+dataColumnRating = df_CreditScores.iloc[:,27]
+le = LabelEncoder()
+le.fit(['Aaa','Aa1','Aa2','Aa3','A1','A2','A3','Baa1','Baa2','Baa3',
+       'Ba1','Ba2','Ba3','B1','B2','B3','Caa1','Caa2','Caa3','Ca','C'])
+changedValues=le.transform(dataColumnRating)
+
+df_CreditScores['Rating']=changedValues
+
+#Print correlations between feature columns
+
+corMat = DataFrame(df_CreditScores.corr())
+corMat.to_excel('/Users/rishabhgooner/UIUC/FinEng/MachineLearning/MachineLearning/CorrelationMatrix.xlsx')
+
+print("Exploratory data analysis for determining Rating")
+cols_Rating = ['Gross Margin','Total Liquidity', 'EBITDA','ST Debt','Total Debit/EBITDA']
+
+sns.pairplot(df_CreditScores[cols_Rating], size=2.5)
+plt.tight_layout()
+plt.show()
+
+cm = np.corrcoef(df_CreditScores[cols_Rating].values.T)
+#sns.set(font_scale=1.5)
+hm = sns.heatmap(cm,
+                 cbar=True,
+                 annot=True,
+                 square=True,
+                 fmt='.2f',
+                 annot_kws={'size': 10},
+                 yticklabels=cols_Rating,
+                 xticklabels=cols_Rating)
+
+plt.tight_layout()
+plt.show()
+
+print("Exploratory data analysis for determining Investment Grade")
+cols_InvGrd = ['Free Cash Flow','CFO','PE','Gross Margin','Net Income Before Extras']
+
+sns.pairplot(df_CreditScores[cols_InvGrd], size=2.5)
+plt.tight_layout()
+plt.show()
+
+cm = np.corrcoef(df_CreditScores[cols_InvGrd].values.T)
+#sns.set(font_scale=1.5)
+hm = sns.heatmap(cm,
+                 cbar=True,
+                 annot=True,
+                 square=True,
+                 fmt='.2f',
+                 annot_kws={'size': 10},
+                 yticklabels=cols_InvGrd,
+                 xticklabels=cols_InvGrd)
