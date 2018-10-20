@@ -1,0 +1,70 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sat Oct 20 17:30:20 2018
+
+@author: h_olawin
+"""
+
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import cross_val_score
+from sklearn.metrics import accuracy_score
+from sklearn.model_selection import train_test_split 
+from sklearn.ensemble import RandomForestClassifier
+import matplotlib.pyplot as plt
+from sklearn import preprocessing
+from sklearn.preprocessing import LabelEncoder
+
+
+# Random forest estimators
+data = pd.read_csv("/Users/h_olawin/Downloads/MLF_GP1_CreditScore.csv")
+data.columns = ['Sales/Revenues','Gross Margin', 'EBITDA','EBITDA Margin',
+                    'Net Income Before Extras','Total Debt', 'Net Debt','LT Debt',
+                    'ST Debt','Cash','Free Cash Flow','Total Debit/EBITDA','Net Debt/EBITDA','Total MV',
+                    'Total Debt/MV','Net Debt/MV','CFO/Debt','CFO',
+                    'Interest Coverage','Total Liquidity','Current Liquidity',
+                    'Current Liabilities','EPS Before Extras','PE','ROA','ROE','InvGrd','Rating']
+#data.drop(columns=['InvGrd', 'Rating'])
+#X = data.iloc[:,:-1].values
+X = data.iloc[:,0:25].values
+#y = data.iloc[:,0].values
+y = data.iloc[:,27]
+X_train, X_test, y_train, y_test = train_test_split (X, y, test_size = 0.1, stratify=y,random_state=1)
+#X_train, X_test, y_train, y_test = train_test_split(X, y,test_size=0.2, random_state=42)
+le = LabelEncoder()
+le.fit(['Aaa','Aa1','Aa2','Aa3','A1','A2','A3','Baa1','Baa2','Baa3',
+       'Ba1','Ba2','Ba3','B1','B2','B3','Caa1','Caa2','Caa3','Ca','C'])
+changedValues=le.transform(y)
+
+data['Rating']=changedValues
+
+params = [2, 5, 10, 15, 20, 28]
+for i in params:
+    print('N_estimators: ', i )
+    RF = RandomForestClassifier(criterion='gini', max_depth=4, n_estimators=i,random_state=42)
+    RF.fit(X_train,y_train)
+    scores = cross_val_score(estimator=RF, X=X_train, y=y_train, cv=10, n_jobs=1)
+    print('in-sample accuray: ', np.mean(scores))  
+
+
+# Random forest feature importance
+feat_labels = data.columns[1:]
+rf=RandomForestClassifier(n_estimators=100, random_state=1)
+rf.fit(X_train,y_train)
+importances = rf.feature_importances_
+indices = np.argsort(importances)[::-1]
+
+for f in range(X_train.shape[1]):
+    print("%2d) %-*s %f" % (f + 1, 30,feat_labels[indices[f]],importances[indices[f]]))
+
+plt.title('Random forest feature importance based on rating')
+plt.bar(range(X_train.shape[1]),importances[indices],align = 'center')
+plt.xticks(range(X_train.shape[1]), feat_labels[indices], rotation = 90)
+plt.xlim([-1, X_train.shape[1]])
+plt.tight_layout()
+plt.show()
+
+print("My name is Habeeb Olawin")
+print("My NetID is: holawin2")
+print("I hereby certify that I have read the University policy on Academic Integrity and that I am not in violation.")
