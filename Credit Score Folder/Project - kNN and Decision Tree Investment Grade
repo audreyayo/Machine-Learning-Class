@@ -1,0 +1,187 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sat Oct 20 21:57:27 2018
+@author: harshbaheti
+"""
+
+from sklearn import __version__ as sklearn_version
+from distutils.version import LooseVersion
+from sklearn import datasets
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import Perceptron
+from sklearn import metrics
+from sklearn.metrics import accuracy_score
+from matplotlib.colors import ListedColormap
+import matplotlib.pyplot as plt
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+from sklearn.linear_model import SGDClassifier
+from sklearn.tree import DecisionTreeClassifier
+from pydotplus import graph_from_dot_data
+from sklearn.tree import export_graphviz
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.preprocessing import LabelEncoder
+import pandas as pd
+from sklearn.metrics import classification_report
+import scipy
+from sklearn.ensemble import BaggingClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import GridSearchCV
+from scipy.stats import randint
+from sklearn.model_selection import RandomizedSearchCV
+from sklearn.metrics import confusion_matrix
+from sklearn.pipeline import make_pipeline
+from sklearn.model_selection import validation_curve
+from sklearn.model_selection import learning_curve
+from sklearn.metrics import roc_auc_score
+from sklearn.decomposition import PCA
+
+
+
+
+# Random forest estimators
+data = pd.read_csv("/Users/h_olawin/Downloads/MLF_GP1_CreditScore.csv")
+data.columns = ['Sales/Revenues','Gross Margin', 'EBITDA','EBITDA Margin',
+                    'Net Income Before Extras','Total Debt', 'Net Debt','LT Debt',
+                    'ST Debt','Cash','Free Cash Flow','Total Debit/EBITDA','Net Debt/EBITDA','Total MV',
+                    'Total Debt/MV','Net Debt/MV','CFO/Debt','CFO',
+                    'Interest Coverage','Total Liquidity','Current Liquidity',
+                    'Current Liabilities','EPS Before Extras','PE','ROA','ROE','InvGrd','Rating']
+#data.drop(columns=['InvGrd', 'Rating'])
+list_important_features = [1,2]
+#y = data.iloc[:,0].values
+y1 = data.iloc[:,27]
+
+#X_train, X_test, y_train, y_test = train_test_split (X, y, test_size = 0.1, stratify=y,random_state=1)
+le = LabelEncoder()
+le.fit(['Aaa','Aa1','Aa2','Aa3','A1','A2','A3','Baa1','Baa2','Baa3',
+       'Ba1','Ba2','Ba3','B1','B2','B3','Caa1','Caa2','Caa3','Ca','C'])
+changedValues=le.transform(y1)
+
+
+data['Rating']=changedValues
+y = data.iloc[:,26]
+print('Class labels:', np.unique(y))
+
+#X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=0)
+
+
+def plot_decision_regions(X, y, classifier, test_idx=None, resolution=0.02):
+
+    # setup marker generator and color map
+    markers = ('s', 'x', 'o', '^', 'v')
+    colors = ('red', 'blue', 'lightgreen', 'gray', 'cyan')
+    cmap = ListedColormap(colors[:len(np.unique(y))])
+
+    # plot the decision surface
+    x1_min, x1_max = X[:, 0].min() - 1, X[:, 0].max() + 1
+    x2_min, x2_max = X[:, 1].min() - 1, X[:, 1].max() + 1
+    xx1, xx2 = np.meshgrid(np.arange(x1_min, x1_max, resolution),
+                           np.arange(x2_min, x2_max, resolution))
+    Z = classifier.predict(np.array([xx1.ravel(), xx2.ravel()]).T)
+    Z = Z.reshape(xx1.shape)
+    plt.contourf(xx1, xx2, Z, alpha=0.3, cmap=cmap)
+    plt.xlim(xx1.min(), xx1.max())
+    plt.ylim(xx2.min(), xx2.max())
+
+    for idx, cl in enumerate(np.unique(y)):
+        plt.scatter(x=X[y == cl, 0], 
+                    y=X[y == cl, 1],
+                    alpha=0.8, 
+                    c=colors[idx],
+                    marker=markers[idx], 
+                    label=cl, 
+                    edgecolor='black')
+
+    # highlight test samples
+    if test_idx:
+        # plot all samples
+        X_test, y_test = X[test_idx, :], y[test_idx]
+
+        plt.scatter(X_test[:, 0],
+                    X_test[:, 1],
+                    c='',
+                    edgecolor='black',
+                    alpha=1.0,
+                    linewidth=1,
+                    marker='o',
+                    s=100, 
+                    label='test set')
+
+sc = StandardScaler()
+#sc.fit(X_train)
+#X_train_std = sc.transform(X_train)
+#X_test_std = sc.transform(X_test)
+
+
+tree = DecisionTreeClassifier(criterion='gini', max_depth=3, random_state=1)
+
+for i in range(len(list_important_features)):
+    for j in range(i+1,len(list_important_features)):
+        print(list_important_features[i],list_important_features[j])
+        X_data=data.iloc[:,[list_important_features[i],list_important_features[j]]]
+        X_train, X_test, y_train, y_test = train_test_split (X_data, y, test_size = 0.1, stratify=y,random_state=1)
+        tree.fit(X_train, y_train)
+        X_combined = np.vstack((X_train, X_test))
+        y_combined = np.hstack((y_train, y_test))
+        plot_decision_regions(X_combined, y_combined, classifier=tree, test_idx=range(1530,1700))
+        plt.xlabel(data.columns[i])
+        plt.ylabel(data.columns[j])
+        plt.legend(loc="upper left")
+        plt.show()
+
+#K nearest neighbor KNN problem
+knn = KNeighborsClassifier(n_neighbors=5, p=2, metric='minkowski')
+for i in range(len(list_important_features)):
+    for j in range(i+1,len(list_important_features)):
+        print(list_important_features[i],list_important_features[j])
+        X_data=data.iloc[:,[list_important_features[i],list_important_features[j]]]
+        X_train, X_test, y_train, y_test = train_test_split (X_data, y, test_size = 0.1, stratify=y,random_state=1)
+        X_combined = np.vstack((X_train, X_test))
+        y_combined = np.hstack((y_train, y_test))
+        knn.fit(X_train, y_train)
+        plot_decision_regions(X_combined, y_combined, classifier=knn, test_idx=range(1530,1700))
+        plt.xlabel(data.columns[i])
+        plt.ylabel(data.columns[j])
+        plt.legend(loc="upper left")
+        plt.show()
+        
+        
+# SVM classifier
+svm = SVC()
+for i in range(len(list_important_features)):
+    for j in range(i+1,len(list_important_features)):
+        print(list_important_features[i],list_important_features[j])
+        X_data=data.iloc[:,[list_important_features[i],list_important_features[j]]]
+        X_train, X_test, y_train, y_test = train_test_split (X_data, y, test_size = 0.1, stratify=y,random_state=1)
+        X_combined = np.vstack((X_train, X_test))
+        y_combined = np.hstack((y_train, y_test))
+        svm.fit(X_train, y_train)
+        plot_decision_regions(X_combined, y_combined, classifier=svm, test_idx=range(1530,1700))
+        plt.xlabel(data.columns[i])
+        plt.ylabel(data.columns[j])
+        plt.legend(loc="upper left")
+        plt.show()
+        
+
+
+# Setup the parameters and distributions to sample from: param_dist
+param_dist = {"max_depth": [3, None],
+              "max_features": randint(1, 2),
+              "min_samples_leaf": randint(1, 2),
+              "criterion": ["gini", "entropy"]}
+
+# Instantiate a Decision Tree classifier: tree
+tree = DecisionTreeClassifier()
+# Instantiate the RandomizedSearchCV object: tree_cv
+tree_cv = RandomizedSearchCV(tree, param_dist, cv=5)
+# Fit it to the data
+X_data=data.iloc[:,[1,2]]
+tree_cv.fit(X_data, y)
+# Print the tuned parameters and score
+print("Tuned Decision Tree Parameters: {}".format(tree_cv.best_params_))
+print("Best score using Decision Tree is {}".format(tree_cv.best_score_))
