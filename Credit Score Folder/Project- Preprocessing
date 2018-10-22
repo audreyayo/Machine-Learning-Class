@@ -1,0 +1,164 @@
+from sklearn.preprocessing import Imputer
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+import numpy as np
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn import preprocessing
+from sklearn.cross_validation import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
+from sklearn.decomposition import KernelPCA
+from sklearn import datasets,decomposition,manifold
+from sklearn.linear_model import SGDClassifier
+from sklearn import metrics
+import pandas as pd
+from sklearn.preprocessing import LabelEncoder
+from sklearn.pipeline import make_pipeline
+from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import learning_curve
+from sklearn.model_selection import validation_curve
+from sklearn.model_selection import GridSearchCV
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import precision_score, recall_score, f1_score
+from sklearn.metrics import make_scorer
+from sklearn.metrics import roc_curve, auc
+from scipy import interp
+from sklearn.utils import resample
+from sklearn.datasets import load_digits
+from sklearn.model_selection import RandomizedSearchCV
+from sklearn.metrics import classification_report
+import scipy
+from sklearn.ensemble import BaggingClassifier
+from sklearn.metrics import accuracy_score
+from sklearn import linear_model
+
+
+ 
+df = pd.read_csv("/Users/h_olawin/Downloads/MLF_GP1_CreditScore.csv")
+
+# Print the number of NaNs
+print(df.isnull().sum())
+
+# Print shape of original DataFrame
+print("Shape of Original DataFrame: {}".format(df.shape))
+
+# Drop missing values and print shape of new DataFrame
+df = df.dropna()
+
+# Print shape of new DataFrame
+print("Shape of DataFrame After Dropping All Rows with Missing Values: {}".format(df.shape))
+
+X, y = df.iloc[0:1700,0:26], df.InvGrd
+
+print(X.shape, y.shape)
+
+# data frame summary
+summary = X.describe()
+print(summary)
+
+X_train, X_test, y_train, y_test = train_test_split(X, y,test_size=0.2, random_state=42)
+print( X_train.shape, y_train.shape)
+
+# Setup the Imputation transformer: imp
+imp = Imputer(missing_values='NaN', strategy='most_frequent', axis=0)
+print('imp')
+
+# Setup the pipeline steps: steps
+steps = [('scaler', StandardScaler()),
+        ('knn', KNeighborsClassifier())]
+
+# Create the pipeline: pipeline
+pipeline = Pipeline(steps)
+
+# Fit the pipeline to the train set
+pipeline.fit(X_train, y_train)
+
+# Predict the labels of the test set
+y_pred = pipeline.predict(X_test)
+
+# Compute metrics
+print(classification_report(y_test, y_pred))
+
+# Fit the pipeline to the training set: knn_scaled
+knn_scaled = pipeline.fit(X_train, y_train)
+
+# Instantiate and fit a k-NN classifier to the unscaled data
+knn_unscaled = KNeighborsClassifier().fit(X_train, y_train)
+
+# Compute and print metrics
+print('Accuracy with Scaling: {}'.format(knn_scaled.score(X_test, y_test)))
+print('Accuracy without Scaling: {}'.format(knn_unscaled.score(X_test, y_test)))
+
+# feature standardization
+sc = StandardScaler()
+X_train_std = sc.fit_transform(X_train)
+X_test_std = sc.transform(X_test)
+
+
+# Eigendecomposition of the covariance matrix.
+cov_mat = np.cov(X_train_std.T)
+eigen_vals, eigen_vecs = np.linalg.eig(cov_mat)
+print('\nEigenvalues \n%s' % eigen_vals)
+
+
+# ## Feature transformation
+# Make a list of (eigenvalue, eigenvector) tuples
+eigen_pairs = [(np.abs(eigen_vals[i]), eigen_vecs[:, i])
+               for i in range(len(eigen_vals))]
+
+# Sort the (eigenvalue, eigenvector) tuples from high to low
+eigen_pairs.sort(key=lambda k: k[0], reverse=True)
+w = np.hstack((eigen_pairs[0][1][:, np.newaxis],
+               eigen_pairs[1][1][:, np.newaxis]))
+#print('Matrix W:\n', w)
+
+
+# ## Principal component analysis in scikit-learn
+pca = PCA()
+X_train_pca = pca.fit_transform(X_train_std)
+X_test_pca = pca.fit_transform(X_test_std)
+pca.explained_variance_ratio_
+plt.bar(range(0, 26), pca.explained_variance_ratio_, alpha=0.5, align='center', label='individual explained variance')
+plt.step(range(0, 26), np.cumsum(pca.explained_variance_ratio_), where='mid', label='cumulative explained variance')
+plt.ylabel('Explained variance ratio')
+plt.xlabel('Principal components')
+plt.legend(loc='best')
+plt.tight_layout()
+plt.show()
+
+lr = LogisticRegression()
+lr.fit(X_train_pca,y_train)
+print('Training accuracy using pca:', lr.score(X_train_pca, y_train))
+print('Test accuracy for using:', lr.score(X_test_pca, y_test))
+
+pca = PCA(n_components=26)
+X_train_pca = pca.fit_transform(X_train_std)
+X_test_pca = pca.transform(X_test_std)
+plt.scatter(X_train_pca[:, 0], X_train_pca[:, 1])
+plt.xlabel('PC 1')
+plt.ylabel('PC 2')
+plt.show()
+
+
+# ## Projecting samples onto the new feature space
+X_train_lda = X_train_std.dot(w)
+colors = ['r', 'b', 'g']
+markers = ['s', 'x', 'o']
+
+for l, c, m in zip(np.unique(y_train), colors, markers):
+    plt.scatter(X_train_lda[y_train == l, 0],
+                X_train_lda[y_train == l, 1] * (-1),
+                c=c, label=l, marker=m)
+
+plt.xlabel('LD 1')
+plt.ylabel('LD 2')
+plt.legend(loc='lower right')
+plt.tight_layout()
+plt.show()
